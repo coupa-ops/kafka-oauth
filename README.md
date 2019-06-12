@@ -1,54 +1,36 @@
-# Kafka OAuth
-
-## Client X Broker Authentication
+# Coupa Kafka OAuth2 Library
 
 ### Container Environments
-For client broker authentication, configure this environment variables:
+For client broker authentication, configure this environment variable:
 
-- OAUTH_WITH_SSL: OAuth server with SSL. Example "false"
-- OAUTH_ACCEPT_UNSECURE_SERVER: OAuth server with self-signed certificate. Example: "true"
-- OAUTH_LOGIN_SERVER : Address of oauth server. Example: localhost:4444
-- OAUTH_LOGIN_ENDPOINT : Login endpoint of OAuth server. Example: /oauth2/token
-- OAUTH_LOGIN_GRANT_TYPE : Grant Type used at OAuth server. Example: client_credentials
-- OAUTH_LOGIN_SCOPE : User scope. Example: producer.kafka
-- OAUTH_AUTHORIZATION : Refresh token of client user. Example: Basic {TOKEN}
+- COUPA_SAND_CONFIG_PATH: path to properties file which holds config for sand server.
 
-### Kafka Client Configuration (Producer/Consumer)
-
-Add oauth-authorizer dependency in your `pom.xml` file
-
-    <dependency>
-        <groupId>jairsjunior</groupId>
-        <artifactId>kafka-oauth</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-
+### Kafka Sand Client Configuration (Producer/Consumer)
 Add this properties in your kafka configuration
 
-- sasl.jaas.config=org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required ;
-- security.protocol=SASL_PLAINTEXT
-- sasl.mechanism=OAUTHBEARER
-- sasl.login.callback.handler.class=OauthAuthenticateLoginCallbackHandler
+```
+coupa.cloud.sand.client.scopes=coupa
+coupa.cloud.sand.client.secret=some_secret
+coupa.cloud.sand.client.id=some_client
+coupa.cloud.sand.client.grant_type=client_credentials
+```
 
-### Example (Producer/Consumer)
+### Example (Producer)
 
-- https://github.com/jairsjunior/kafka-playground
+```bash
+export COUPA_SAND_CONFIG_PATH=/home/deploy/sand.properties
+KAFKA_OPTS="-Dlog4j.configuration=file:/srv/kafka/2.12-2.0.0/kafka_2.12-2.0.0/config/log4j.properties  -Djava.security.properties=/etc/kafka/bcfips.java.security -Djavax.net.ssl.trustStore=/var/private/ssl/kafka.truststore.bcfks -Djavax.net.ssl.trustStorePassword=some_password" /srv/kafka/current/kafka_2.12-2.0.0/bin/kafka-console-producer.sh --broker-list 10.1.11.43:9092 --producer.config client.properties --topic test-topic1
+```
 
 ## Broker X Broker Authentication
+```java
+class com.coupa.cloud.operations.ce.kafka.security.sasl.oauth.KafkaBrokerSandTokenCreator
+```
+### How to build/package the library.
 
-### Environments
-For inter broker authentication, configure this environment variables:
-
-- OAUTH_WITH_SSL: OAuth server with SSL. Example "false"
-- OAUTH_ACCEPT_UNSECURE_SERVER: OAuth server with self-signed certificate. Example: "true"
-- OAUTH_LOGIN_SERVER : Address of oauth server. Example: localhost:4444
-- OAUTH_LOGIN_ENDPOINT : Login endpoint of OAuth server. Example: /oauth2/token
-- OAUTH_LOGIN_GRANT_TYPE : Grant Type used at OAuth server. Example: client_credentials
-- OAUTH_LOGIN_SCOPE : User scope. Example: broker.kafka
-- OAUTH_AUTHORIZATION : Refresh token of client user. Example: Basic {TOKEN}
-- OAUTH_INTROSPECT_SERVER : Address of oauth server. Example: localhost:4444
-- OAUTH_INTROSPECT_ENDPOINT : Instrospect endpoint of oauth server. Example: /oauth2/introspect
-- OAUTH_INTROSPECT_AUTHORIZATION : Refresh token of introspecter service. Example: Basic {TOKEN}
+```bash
+mvn3/maven/mvn package
+```
 
 ### Kafka Server Configuration
 
@@ -57,8 +39,8 @@ Add this properties in server.properties
 - security.inter.broker.protocol=SASL_PLAINTEXT or (SASL_SSL)
 - sasl.mechanism.inter.broker.protocol=OAUTHBEARER
 - sasl.enabled.mechanisms=OAUTHBEARER
-- listener.name.sasl_plaintext.oauthbearer.sasl.login.callback.handler.class=br.com.jairsjunior.security.oauthbearer.OauthAuthenticateLoginCallbackHandler
-- listener.name.sasl_plaintext.oauthbearer.sasl.server.callback.handler.class=br.com.jairsjunior.security.oauthbearer.OauthAuthenticateValidatorCallbackHandler
+- listener.name.sasl_plaintext.oauthbearer.sasl.login.callback.handler.class=com.coupa.cloud.operations.ce.kafka.security.sasl.oauth.KafkaBrokerSandTokenCreator
+- listener.name.sasl_plaintext.oauthbearer.sasl.server.callback.handler.class=com.coupa.cloud.operations.ce.kafka.security.sasl.oauth.KafkaSandTokenValidator
 - listeners=SASL_PLAINTEXT://:{PORT} or (SASL_SSL://:{PORT})
 - advertised.listeners=SASL_PLAINTEXT://{HOST_IP}:{PORT} or (SASL_SSL://{HOST_IP}:{PORT})
 
